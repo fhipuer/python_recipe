@@ -17,13 +17,21 @@ def processAllUrls(startYear, startMonth):
     # urls = urls[:1]  # check once
 
     for url in urls:
-        res = accessUrl(url[2])
-        if res.status_code == 200:
-            retPapers = parseAplPaperList(standardYear + url[0], url[1], res.text)
-            if not retPapers:
-                return
-            else:
-                convertToCsv(retPapers)
+        parseAplPaperListWithREcovery(url)
+
+
+def parseAplPaperListWithREcovery(url):
+    res = accessUrl(url[2])
+    if res.status_code == 200:
+        retPapers = parseAplPaperList(standardYear + url[0], url[1], res.text)
+        if not retPapers:
+            return
+        else:
+            convertToCsv(retPapers)
+    else:
+        time.sleep(10)
+        print(f"Retry paper list: {url}")
+        parseAplPaperListWithREcovery(url)
 
 
 def convertToCsv(retPapers):
@@ -39,6 +47,8 @@ def getUrls(startYear, startMonth):
     for yearIter in range(startYear, 12):
         for monthIter in range(startMonth, 13):
             allUrls.append((yearIter, monthIter, baseUrl + str(yearIter) + "/" + str(monthIter)))
+        startMonth = 1
+
     return allUrls
 
 
@@ -62,17 +72,30 @@ def parseAplPaperList(year, month, paperList):
         tag = title.find('a')
         if tag.has_attr('href'):
             paperUrl = homeUrl + tag['href']
-            res = accessUrl(paperUrl)
-            time.sleep(5)
-            if res.status_code == 200:
-                retPaper = parseAplPaper(year, month, seq, res.text)
-                if retPaper is not None:
-                    retPapers.append(retPaper)
-                    seq = seq + 1
-                else:
-                    return retPapers
+            retPaper = parseAplPaperWithRecovery(year, month, seq, paperUrl, 5)
+            if retPaper is not None:
+                retPapers.append(retPaper)
+                seq = seq + 1
+            else:
+                return retPapers
 
     return retPapers
+
+
+def parseAplPaperWithRecovery(year, month, seq, paperUrl, retry):
+    res = accessUrl(paperUrl)
+    time.sleep(5)
+    if res.status_code == 200:
+        retPaper = parseAplPaper(year, month, seq, res.text)
+        if retPaper is not None:
+            return retPaper
+        else:
+            time.sleep(10)
+            print(f"Retry...")
+            if retry > 0:
+                return parseAplPaperWithRecovery(year, month, seq, paperUrl, retry - 1)
+            else:
+                return None
 
 
 def parseAplPaper(year, month, seq, paper):
@@ -93,7 +116,10 @@ def parseAplPaper(year, month, seq, paper):
 
         dates = soup.find_all('div', 'wi-date')
         receivedDate = convertDate(dates[0].text.strip())
-        acceptedDate = convertDate(dates[1].text.strip())
+        if len(dates) > 1:
+            acceptedDate = convertDate(dates[1].text.strip())
+        else:
+            acceptedDate = " "
         print(f"{year}/{month}/#{seq} : {title}")
         return year, month, seq, title, authors, receivedDate, acceptedDate, publishDate
 
@@ -104,4 +130,4 @@ def convertDate(date):
 
 
 if __name__ == '__main__':
-    processAllUrls(1, 1)
+    processAllUrls(6, 3)
