@@ -44,12 +44,13 @@ class ManipulateCsv:
                 longest_atop = duration
                 longest_atop_info = (row[0], row[1], row[2], row[3], row[5], row[6], row[7], longest_atop.days)
             if row[1] == '12':
-                print(f"{row[0]}, {row[1]}, {row[2]}, publish: {row[7]}")
+                print(f"{row[0]}/{row[1]}/#{row[2]}, {row[7]} : {row[3]}")
 
         size = timedelta(days=self.reader.line_num)
         rtop_avg = rtop_sum / size
         rtoa_avg = rtoa_sum / size
         atop_avg = atop_sum / size
+        print("")
         print(f"Longest case received to publish: {longest_rtop_info}")
         print(f"Longest case received to accept: {longest_rtoa_info}")
         print(f"Longest case accepted to publish: {longest_atop_info}")
