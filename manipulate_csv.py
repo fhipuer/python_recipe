@@ -1,6 +1,8 @@
 import csv
 
 from datetime import datetime, timedelta
+import matplotlib.pyplot as plt
+import numpy as np
 
 class ManipulateCsv:
     def __init__(self, file):
@@ -21,11 +23,13 @@ class ManipulateCsv:
         longest_rtop = timedelta(days=0)
         longest_rtoa = timedelta(days=0)
         longest_atop = timedelta(days=0)
+        duration_list = []
 
         for row in self.reader:
             duration = self.calculate_duration(row[5], row[7])
             if duration is not None:
                 rtop_sum = rtop_sum + duration
+                duration_list.append(duration.days)
             if duration is not None and longest_rtop < duration:
                 longest_rtop = duration
                 longest_rtop_info = (row[0], row[1], row[2], row[3], row[5], row[6], row[7], longest_rtop.days)
@@ -58,6 +62,15 @@ class ManipulateCsv:
         print(f"Average received to publish: {rtop_avg}")
         print(f"Average received to accept: {rtoa_avg}")
         print(f"Average accepted to publish: {atop_avg}")
+        print(f"Total papers: {size}")
+
+        plt.figure(figsize=(10, 6))
+        plt.hist(duration_list, bins=50, alpha=0.7, color='blue')
+        plt.title('Distribution of Time to Publication for Manuscripts')
+        plt.xlabel('Duration')
+        plt.ylabel('Count')
+        plt.grid(True)
+        plt.show()
 
 
     def calculate_duration(self, start, end):
